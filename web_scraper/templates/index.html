@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Scraper - Live Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="download" class="w-8 h-8 text-blue-600"></i>
+                    <h1 class="text-3xl font-bold text-gray-800">Web Scraper Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="status-indicator" class="flex items-center">
+                        <span class="w-3 h-3 bg-gray-400 rounded-full mr-2"></span>
+                        <span class="text-sm text-gray-600">Ready</span>
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Configuration Panel -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center">
+                        <i data-lucide="settings" class="w-5 h-5 mr-2"></i>
+                        Configuration
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                URLs (one per line)
+                            </label>
+                            <textarea id="urls" rows="4" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="https://example.com&#10;https://example2.com"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                CSS Selectors (JSON format)
+                            </label>
+                            <textarea id="selectors" rows="6" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder='{"title": "h1", "links": "a", "paragraphs": "p"}'></textarea>
+                        </div>
+                        
+                        <div class="flex space-x-2">
+                            <button id="start-btn" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center">
+                                <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                                Start Scraping
+                            </button>
+                            <button id="stop-btn" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center" disabled>
+                                <i data-lucide="square" class="w-4 h-4 mr-2"></i>
+                                Stop
+                            </button>
+                        </div>
+                        
+                        <button id="download-btn" class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center">
+                            <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                            Download Results
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Panel -->
+                <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center">
+                        <i data-lucide="activity" class="w-5 h-5 mr-2"></i>
+                        Status
+                    </h2>
+                    <div id="status-messages" class="space-y-2 max-h-48 overflow-y-auto">
+                        <p class="text-sm text-gray-600">Ready to start scraping...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold flex items-center">
+                            <i data-lucide="file-text" class="w-5 h-5 mr-2"></i>
+                            Results
+                        </h2>
+                        <span id="results-count" class="text-sm text-gray-600">0 results</span>
+                    </div>
+                    
+                    <div id="results-container" class="space-y-4 max-h-96 overflow-y-auto">
+                        <div class="text-center text-gray-500 py-8">
+                            <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                            <p>No results yet. Start scraping to see results here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        let isScraping = false;
+
+        // DOM Elements
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const urlsTextarea = document.getElementById('urls');
+        const selectorsTextarea = document.getElementById('selectors');
+        const statusMessages = document.getElementById('status-messages');
+        const resultsContainer = document.getElementById('results-container');
+        const resultsCount = document.getElementById('results-count');
+        const statusIndicator = document.getElementById('status-indicator');
+
+        // Event Listeners
+        startBtn.addEventListener('click', startScraping);
+        stopBtn.addEventListener('click', stopScraping);
+        downloadBtn.addEventListener('click', downloadResults);
+
+        // Set default values
+        urlsTextarea.value = `https://quotes.toscrape.com/
+https://books.toscrape.com/`;
+        selectorsTextarea.value = `{
+  "titles": "h1, h2, h3",
+  "quotes": "text",
+  "authors": ".author",
+  "links": "a[href]"
+}`;
+
+        async function startScraping() {
+            const urls = urlsTextarea.value.trim().split('\n').filter(url => url.trim());
+            const selectorsText = selectorsTextarea.value.trim();
+            
+            if (!urls.length) {
+                addStatusMessage('Please enter at least one URL', 'error');
+                return;
+            }
+            
+            let selectors;
+            try {
+                selectors = JSON.parse(selectorsText);
+            } catch (e) {
+                addStatusMessage('Invalid JSON in selectors field', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ urls, selectors })
+                });
+                
+                if (response.ok) {
+                    isScraping = true;
+                    updateUIState();
+                    addStatusMessage('Scraping started...', 'success');
+                } else {
+                    const error = await response.json();
+                    addStatusMessage(`Error: ${error.error}`, 'error');
+                }
+            } catch (error) {
+                addStatusMessage(`Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function stopScraping() {
+            try {
+                const response = await fetch('/api/stop', { method: 'POST' });
+                if (response.ok) {
+                    isScraping = false;
+                    updateUIState();
+                    addStatusMessage('Scraping stopped', 'warning');
+                }
+            } catch (error) {
+                addStatusMessage(`Error stopping: ${error.message}`, 'error');
+            }
+        }
+
+        async function downloadResults() {
+            try {
+                const response = await fetch('/api/download');
+                if (response.ok) {
+                    const result = await response.json();
+                    addStatusMessage(result.message, 'success');
+                }
+            } catch (error) {
+                addStatusMessage(`Error downloading: ${error.message}`, 'error');
+            }
+        }
+
+        function updateUIState() {
+            startBtn.disabled = isScraping;
+            stopBtn.disabled = !isScraping;
+            
+            if (isScraping) {
+                statusIndicator.innerHTML = '<span class="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse-slow"></span><span class="text-sm text-green-600">Running</span>';
+            } else {
+                statusIndicator.innerHTML = '<span class="w-3 h-3 bg-gray-400 rounded-full mr-2"></span><span class="text-sm text-gray-600">Ready</span>';
+            }
+        }
+
+        function addStatusMessage(message, type = 'info') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `p-2 rounded text-sm ${
+                type === 'error' ? 'bg-red-100 text-red-700' :
+                type === 'success' ? 'bg-green-100 text-green-700' :
+                type === 'warning' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-blue-100 text-blue-700'
+            }`;
+            messageDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            statusMessages.appendChild(messageDiv);
+            statusMessages.scrollTop = statusMessages.scrollHeight;
+            
+            // Keep only last 20 messages
+            while (statusMessages.children.length > 20) {
+                statusMessages.removeChild(statusMessages.firstChild);
+            }
+        }
+
+        function displayResults(results) {
+            if (!results.length) {
+                resultsContainer.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                        <p>No results yet. Start scraping to see results here.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+            
+            resultsContainer.innerHTML = results.map((result, index) => `
+                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                    <div class="flex items-start justify-between mb-2">
+                        <h3 class="font-medium text-blue-600 truncate flex-1">
+                            <a href="${result.url}" target="_blank" class="hover:underline">
+                                ${result.url}
+                            </a>
+                        </h3>
+                        <span class="text-xs text-gray-500 ml-2">
+                            ${new Date(result.timestamp).toLocaleString()}
+                        </span>
+                    </div>
+                    ${result.error ? 
+                        `<div class="text-red-600 text-sm">${result.error}</div>` :
+                        `<div class="space-y-2">
+                            ${Object.entries(result.data).map(([key, values]) => `
+                                <div>
+                                    <span class="font-medium text-gray-700">${key}:</span>
+                                    <div class="text-sm text-gray-600 mt-1">
+                                        ${values.length > 0 ? 
+                                            values.slice(0, 3).map(v => `<div class="ml-2">• ${v}</div>`).join('') +
+                                            (values.length > 3 ? `<div class="ml-2 text-gray-400">... and ${values.length - 3} more</div>` : '')
+                                            : '<span class="text-gray-400 italic">No items found</span>'
+                                        }
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>`
+                    }
+                </div>
+            `).join('');
+            
+            resultsCount.textContent = `${results.length} result${results.length !== 1 ? 's' : ''}`;
+        }
+
+        // Poll for status and results
+        async function pollStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                // Update status messages
+                status.status_messages.forEach(message => {
+                    addStatusMessage(message, 'info');
+                });
+                
+                // Update results
+                if (status.results_count > 0) {
+                    const resultsResponse = await fetch('/api/results');
+                    const results = await resultsResponse.json();
+                    displayResults(results);
+                }
+                
+                // Update UI state
+                if (status.is_running !== isScraping) {
+                    isScraping = status.is_running;
+                    updateUIState();
+                }
+            } catch (error) {
+                console.error('Error polling status:', error);
+            }
+        }
+
+        // Start polling
+        setInterval(pollStatus, 2000);
+        pollStatus(); // Initial call
+    </script>
+</body>
+</html>
