@@ -1,586 +1,139 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Trucking Company Scraper</title>
+    <title>Loss Run Request Form</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .panel { background: white; padding: 30px; margin: 20px 0; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        button { padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; cursor: pointer; margin: 10px; font-size: 16px; font-weight: bold; transition: all 0.3s; }
-        button:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
-        .company-card { border: 2px solid #e0e0e0; padding: 25px; margin: 20px 0; border-radius: 15px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); transition: all 0.3s; }
-        .company-card:hover { box-shadow: 0 15px 30px rgba(0,0,0,0.2); transform: translateY(-5px); }
-        .status { padding: 20px; margin: 15px 0; border-radius: 10px; font-size: 16px; }
-        .success { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); color: #155724; border-left: 5px solid #28a745; }
-        .error { background: linear-gradient(135deg, #fccb90 0%, #ff9a9e 100%); color: #721c24; border-left: 5px solid #dc3545; }
-        .info { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #0c5460; border-left: 5px solid #17a2b8; }
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin: 25px 0; }
-        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 15px; text-align: center; transition: all 0.3s; }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.3); }
-        .stat-number { font-size: 2.5em; font-weight: bold; }
-        .field { display: grid; grid-template-columns: 200px 1fr; gap: 15px; margin: 10px 0; }
-        .field-label { font-weight: bold; color: #333; background: #f0f0f0; padding: 8px 12px; border-radius: 5px; }
-        .field-value { color: #666; padding: 8px 12px; background: #fafafa; border-radius: 5px; }
-        .loading { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        h1 { color: #667eea; font-size: 3em; margin-bottom: 20px; text-align: center; }
-        h2 { color: #764ba2; font-size: 1.8em; margin-bottom: 15px; }
-        .url-input { width: 100%; padding: 15px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; margin: 10px 0; }
-        .tabs { display: flex; margin: 20px 0; border-bottom: 2px solid #ddd; }
-        .tab { padding: 15px 25px; cursor: pointer; background: #f0f0f0; border: none; border-bottom: 3px solid transparent; transition: all 0.3s; }
-        .tab.active { background: white; border-bottom: 3px solid #667eea; color: #667eea; font-weight: bold; }
-        .tab-content { display: none; padding: 20px 0; }
-        .tab-content.active { display: block; }
+        body { font-family: Arial; padding: 20px; }
+        input, textarea { width: 100%; margin-bottom: 10px; padding: 8px; }
+        .output { border: 1px solid #000; padding: 20px; margin-top: 20px; white-space: pre-line; }
+        button { padding: 10px 20px; margin-right: 10px; }
+        .download-btn { background-color: #28a745; color: white; border: none; cursor: pointer; }
+        .download-btn:hover { background-color: #218838; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="panel">
-            <h1>🚛 Ultimate Trucking Company Scraper</h1>
-            <p style="font-size: 1.2em; color: #666; text-align: center; margin-bottom: 30px;">Complete trucking company database with real data</p>
-            
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('real-data')">📊 Real Data</button>
-                <button class="tab" onclick="switchTab('website-scrape')">🌐 Website Scrape</button>
-                <button class="tab" onclick="switchTab('manual-add')">➕ Manual Add</button>
-            </div>
-            
-            <!-- Real Data Tab -->
-            <div id="real-data" class="tab-content active">
-                <div style="text-align: center; margin: 30px 0;">
-                    <button onclick="loadRealTruckingData()">🚀 Load Real Trucking Database</button>
-                    <button onclick="loadMoreCompanies()">📈 Load More Companies</button>
-                    <button onclick="clearResults()">🗑️ Clear Results</button>
-                    <button onclick="downloadCSV()">💾 Download CSV</button>
-                </div>
-            </div>
-            
-            <!-- Website Scrape Tab -->
-            <div id="website-scrape" class="tab-content">
-                <input type="text" id="website-url" class="url-input" value="https://brokersnapshot.com/" placeholder="Enter website URL">
-                <div style="text-align: center; margin: 30px 0;">
-                    <button onclick="scrapeWebsite()">🌐 Scrape Website</button>
-                    <button onclick="testConnection()">🔍 Test Connection</button>
-                </div>
-            </div>
-            
-            <!-- Manual Add Tab -->
-            <div id="manual-add" class="tab-content">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
-                    <input type="text" id="manual-company" placeholder="Company Name" style="padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                    <input type="text" id="manual-dot" placeholder="DOT Number" style="padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                    <input type="text" id="manual-phone" placeholder="Phone Number" style="padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                    <input type="text" id="manual-email" placeholder="Email Address" style="padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                </div>
-                <div style="text-align: center;">
-                    <button onclick="addManualCompany()">➕ Add Company</button>
-                </div>
-            </div>
-        </div>
 
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number" id="total-companies">0</div>
-                <div>Total Companies</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="valid-dots">0</div>
-                <div>Valid DOT Numbers</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="valid-phones">0</div>
-                <div>Valid Phone Numbers</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="valid-emails">0</div>
-                <div>Valid Emails</div>
-            </div>
-        </div>
+<h2>Loss Run Request Form</h2>
 
-        <div id="status-panel" class="panel">
-            <h2>📊 Status Log</h2>
-            <div id="status-messages">
-                <div class="status info">🚀 Ready to load trucking company data...</div>
-            </div>
-        </div>
+<label>Insured Name</label>
+<input type="text" id="name">
 
-        <div id="results-panel" class="panel">
-            <h2>🚛 Trucking Companies Database</h2>
-            <div id="results">
-                <div class="status info">Click "Load Real Trucking Database" to start...</div>
-            </div>
-        </div>
-    </div>
+<label>Address</label>
+<textarea id="address"></textarea>
 
-    <script>
-        let scrapedData = [];
-        let currentTab = 'real-data';
+<label>Phone</label>
+<input type="text" id="phone">
 
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-            currentTab = tabName;
+<label>Email</label>
+<input type="text" id="email">
+
+<label>Policy Number</label>
+<input type="text" id="policy">
+
+<label>Policy Period</label>
+<input type="text" id="period">
+
+<label>Insurance Company</label>
+<input type="text" id="company">
+
+<label>Owner Name</label>
+<input type="text" id="owner">
+
+<button onclick="generate()">Generate Letter</button>
+<button id="downloadBtn" class="download-btn hidden" onclick="downloadPDF()">Download PDF</button>
+
+<div class="output" id="output"></div>
+
+<script>
+function generate() {
+    let name = document.getElementById("name").value;
+    let address = document.getElementById("address").value;
+    let phone = document.getElementById("phone").value;
+    let email = document.getElementById("email").value;
+    let policy = document.getElementById("policy").value;
+    let period = document.getElementById("period").value;
+    let company = document.getElementById("company").value;
+    let owner = document.getElementById("owner").value;
+
+    let letter = `
+${name}
+${address}
+${phone}
+${email}
+
+To: ${company}
+
+Attention: Loss Run Department
+RE: Loss Run Request
+Insured Name: ${name}
+Policy Number(s): ${policy}
+Policy Period(s): ${period}
+Insurance Company: ${company}
+
+To Whom It May Concern,
+
+I, ${owner}, hereby request loss run statements for the above-referenced insurance policy(ies). Please provide up to 5 years of claims history (or complete history if less than 5 years), including the policy number, period of coverage, number of claims, paid losses, dates of each loss, and reserve amounts, as applicable.
+Please send the loss run statements electronically to my authorized agent at:
+Email: managertrucking1@gmail.com
+Backup Fax: 305.556.5469
+If a wet signature is required by your process, please notify us at the email address above. I appreciate your prompt assistance in providing this information within the 15-day timeframe required by law.
+
+Sincerely,
+
+
+
+${owner}
+Owner
+${email}
+`;
+
+    document.getElementById("output").innerText = letter;
+    
+    // Show download button
+    document.getElementById("downloadBtn").classList.remove("hidden");
+    
+    // Store letter for PDF generation
+    window.currentLetter = letter;
+}
+
+function downloadPDF() {
+    if (!window.currentLetter) {
+        alert("Please generate a letter first!");
+        return;
+    }
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Add custom font for better Unicode support
+    doc.setFont("helvetica");
+    doc.setFontSize(12);
+    
+    // Split letter into lines
+    const lines = doc.splitTextToSize(window.currentLetter, 170);
+    
+    // Add text to PDF
+    let y = 20;
+    lines.forEach(line => {
+        if (y > 270) {
+            doc.addPage();
+            y = 20;
         }
+        doc.text(line, 20, y);
+        y += 7;
+    });
+    
+    // Create filename with company and policy period
+    const name = document.getElementById("name").value || "LossRun";
+    const company = document.getElementById("company").value || "Company";
+    const period = document.getElementById("period").value || "Period";
+    
+    // Save PDF
+    doc.save(`${name} - ${company} <> ${period}.pdf`);
+}
+</script>
 
-        function addStatus(message, type = 'info') {
-            const statusDiv = document.getElementById('status-messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `status ${type}`;
-            messageDiv.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
-            statusDiv.appendChild(messageDiv);
-            statusDiv.scrollTop = statusDiv.scrollHeight;
-        }
-
-        function updateStats() {
-            document.getElementById('total-companies').textContent = scrapedData.length;
-            document.getElementById('valid-dots').textContent = scrapedData.filter(c => c.dot && c.dot.length >= 6).length;
-            document.getElementById('valid-phones').textContent = scrapedData.filter(c => c.phone && c.phone.length >= 10).length;
-            document.getElementById('valid-emails').textContent = scrapedData.filter(c => c.email && c.email.includes('@')).length;
-        }
-
-        function loadRealTruckingData() {
-            addStatus('🚀 Loading real trucking company database...', 'info');
-            
-            // Real trucking companies with complete data
-            const realCompanies = [
-                {
-                    companyName: "J.B. Hunt Transport Services",
-                    dot: "283471",
-                    mc: "331439",
-                    phone: "(479) 725-7000",
-                    email: "info@jbhunt.com",
-                    ownerName: "John J. Roberts",
-                    address: "615 J.B. Hunt Corporate Drive",
-                    city: "Lowell",
-                    state: "AR",
-                    zip: "72745",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Schneider National Carriers",
-                    dot: "432760",
-                    mc: "272934",
-                    phone: "(920) 693-8000",
-                    email: "contact@schnieder.com",
-                    ownerName: "Mark Rourke",
-                    address: "3101 Packerland Drive",
-                    city: "Green Bay",
-                    state: "WI",
-                    zip: "54303",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Swift Transportation Co.",
-                    dot: "372145",
-                    mc: "470871",
-                    phone: "(602) 239-6000",
-                    email: "info@swift.com",
-                    ownerName: "Moyra Smith",
-                    address: "2200 Sunland Gin Road",
-                    city: "Phoenix",
-                    state: "AZ",
-                    zip: "85040",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Werner Enterprises Inc.",
-                    dot: "322531",
-                    mc: "247966",
-                    phone: "(402) 898-8000",
-                    email: "info@werner.com",
-                    ownerName: "Derek Leathers",
-                    address: "7100 L Street Plaza",
-                    city: "Omaha",
-                    state: "NE",
-                    zip: "68102",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Prime Inc.",
-                    dot: "63636",
-                    mc: "307321",
-                    phone: "(800) 877-3763",
-                    email: "info@primeinc.com",
-                    ownerName: "Robert Low",
-                    address: "1 Prime Way",
-                    city: "Springfield",
-                    state: "MO",
-                    zip: "65803",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "CR England",
-                    dot: "62275",
-                    mc: "258732",
-                    phone: "(801) 892-6000",
-                    email: "info@crengland.com",
-                    ownerName: "Dan England",
-                    address: "5575 South 3000 West",
-                    city: "Salt Lake City",
-                    state: "UT",
-                    zip: "84123",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "U.S. Xpress Inc.",
-                    dot: "636432",
-                    mc: "354237",
-                    phone: "(800) 877-7253",
-                    email: "info@usxpress.com",
-                    ownerName: "Eric Fuller",
-                    address: "2425 Defoor Hills Road NW",
-                    city: "Atlanta",
-                    state: "GA",
-                    zip: "30318",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Knight Transportation",
-                    dot: "593069",
-                    mc: "284735",
-                    phone: "(602) 239-6000",
-                    email: "info@knighttrans.com",
-                    ownerName: "David Jackson",
-                    address: "2001 West Deer Valley Road",
-                    city: "Phoenix",
-                    state: "AZ",
-                    zip: "85027",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Crete Carrier Corporation",
-                    dot: "227880",
-                    mc: "349970",
-                    phone: "(800) 992-8396",
-                    email: "info@cretecarrier.com",
-                    ownerName: "Tonn Ostergard",
-                    address: "5500 C Street",
-                    city: "Lincoln",
-                    state: "NE",
-                    zip: "68510",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Marten Transport Ltd.",
-                    dot: "292832",
-                    mc: "970836",
-                    phone: "(608) 743-6611",
-                    email: "info@marten.com",
-                    ownerName: "Randolph Marten",
-                    address: "1201 7th Avenue",
-                    city: "Mondovi",
-                    state: "WI",
-                    zip: "54755",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "TMC Transportation",
-                    dot: "525320",
-                    mc: "357918",
-                    phone: "(800) 247-2862",
-                    email: "info@tmctrans.com",
-                    ownerName: "Harold Good",
-                    address: "2455 TMC Boulevard",
-                    city: "North Little Rock",
-                    state: "AR",
-                    zip: "72120",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Heartland Express",
-                    dot: "524698",
-                    mc: "357917",
-                    phone: "(800) 444-4817",
-                    email: "info@heartlandexpress.com",
-                    ownerName: "Russ Gerdin",
-                    address: "2600 Heartland Drive",
-                    city: "Iowa City",
-                    state: "IA",
-                    zip: "52240",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Celadon Trucking",
-                    dot: "622373",
-                    mc: "258733",
-                    phone: "(800) 868-5398",
-                    email: "info@celadontrucking.com",
-                    ownerName: "Paul Williford",
-                    address: "2745 South German Church Road",
-                    city: "Indianapolis",
-                    state: "IN",
-                    zip: "46239",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Navajo Transportation",
-                    dot: "311518",
-                    mc: "322531",
-                    phone: "(800) 826-8556",
-                    email: "info@navajo.com",
-                    ownerName: "David Earley",
-                    address: "100 Navajo Road",
-                    city: "Lubbock",
-                    state: "TX",
-                    zip: "79408",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "ABF Freight System",
-                    dot: "30640",
-                    mc: "113819",
-                    phone: "(800) 632-5746",
-                    email: "info@abf.com",
-                    ownerName: "Judy McReynolds",
-                    address: "2001 Walton Boulevard",
-                    city: "Fort Smith",
-                    state: "AR",
-                    zip: "72916",
-                    source: "FMCSA Database"
-                }
-            ];
-            
-            scrapedData = realCompanies;
-            addStatus(`✅ Successfully loaded ${realCompanies.length} real trucking companies!`, 'success');
-            displayResults();
-            updateStats();
-            addStatus('📊 All companies have valid DOT numbers, phone numbers, and emails!', 'success');
-        }
-
-        function loadMoreCompanies() {
-            addStatus('📈 Loading additional companies...', 'info');
-            
-            const additionalCompanies = [
-                {
-                    companyName: "Saia Inc.",
-                    dot: "532506",
-                    mc: "357917",
-                    phone: "(800) 765-7242",
-                    email: "info@saia.com",
-                    ownerName: "Rick O'Dell",
-                    address: "1001 Saunders Road",
-                    city: "Johns Creek",
-                    state: "GA",
-                    zip: "30097",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Estes Express Lines",
-                    dot: "236831",
-                    mc: "357917",
-                    phone: "(804) 353-1900",
-                    email: "info@estesexpress.com",
-                    ownerName: "Rob Estes",
-                    address: "2001 Estes Way",
-                    city: "Richmond",
-                    state: "VA",
-                    zip: "23237",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "Old Dominion Freight Line",
-                    dot: "117091",
-                    mc: "357917",
-                    phone: "(800) 432-6335",
-                    email: "info@odfl.com",
-                    ownerName: "David Congdon",
-                    address: "5001 Airfield Drive",
-                    city: "Thomasville",
-                    state: "NC",
-                    zip: "27360",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "YRC Freight",
-                    dot: "702358",
-                    mc: "357917",
-                    phone: "(800) 610-6500",
-                    email: "info@yrcfreight.com",
-                    ownerName: "Darren Hawkins",
-                    address: "10990 Roe Avenue",
-                    city: "Overland Park",
-                    state: "KS",
-                    zip: "66211",
-                    source: "FMCSA Database"
-                },
-                {
-                    companyName: "FedEx Freight",
-                    dot: "236770",
-                    mc: "357917",
-                    phone: "(800) 463-3339",
-                    email: "info@fedexfreight.com",
-                    ownerName: "John Smith",
-                    address: "942 South Shady Grove Road",
-                    city: "Memphis",
-                    state: "TN",
-                    zip: "38120",
-                    source: "FMCSA Database"
-                }
-            ];
-            
-            scrapedData.push(...additionalCompanies);
-            addStatus(`✅ Added ${additionalCompanies.length} more companies! Total: ${scrapedData.length}`, 'success');
-            displayResults();
-            updateStats();
-        }
-
-        async function scrapeWebsite() {
-            addStatus('🌐 Attempting to scrape website...', 'info');
-            
-            const url = document.getElementById('website-url').value.trim();
-            if (!url) {
-                addStatus('❌ Please enter a URL', 'error');
-                return;
-            }
-            
-            // Since direct scraping is blocked, we'll show a message
-            addStatus('⚠️ Website scraping is blocked by CORS policies', 'error');
-            addStatus('💡 Please use the "Real Data" tab for complete trucking company database', 'info');
-            addStatus('📊 The Real Data tab contains 20+ major US trucking companies with complete information', 'success');
-        }
-
-        async function testConnection() {
-            addStatus('🔍 Testing connection...', 'info');
-            addStatus('⚠️ Direct website access is blocked by browser security', 'error');
-            addStatus('💡 Use Real Data tab for complete trucking company database', 'info');
-        }
-
-        function addManualCompany() {
-            const company = {
-                companyName: document.getElementById('manual-company').value,
-                dot: document.getElementById('manual-dot').value,
-                phone: document.getElementById('manual-phone').value,
-                email: document.getElementById('manual-email').value,
-                ownerName: '',
-                address: '',
-                city: '',
-                state: '',
-                zip: '',
-                source: 'Manual Entry'
-            };
-            
-            if (company.companyName) {
-                scrapedData.push(company);
-                addStatus(`✅ Added ${company.companyName} manually!`, 'success');
-                displayResults();
-                updateStats();
-                
-                // Clear form
-                document.getElementById('manual-company').value = '';
-                document.getElementById('manual-dot').value = '';
-                document.getElementById('manual-phone').value = '';
-                document.getElementById('manual-email').value = '';
-            } else {
-                addStatus('❌ Please enter at least company name', 'error');
-            }
-        }
-
-        function displayResults() {
-            const resultsDiv = document.getElementById('results');
-            
-            if (scrapedData.length === 0) {
-                resultsDiv.innerHTML = '<div class="status info">Click "Load Real Trucking Database" to start...</div>';
-                return;
-            }
-
-            resultsDiv.innerHTML = scrapedData.map(company => `
-                <div class="company-card">
-                    <h3 style="color: #667eea; margin-bottom: 20px; font-size: 1.4em;">🚛 ${company.companyName}</h3>
-                    <div class="field">
-                        <div class="field-label">DOT Number:</div>
-                        <div class="field-value">${company.dot || 'N/A'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">MC Number:</div>
-                        <div class="field-value">${company.mc || 'N/A'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">Phone Number:</div>
-                        <div class="field-value">${company.phone || 'N/A'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">Email Address:</div>
-                        <div class="field-value">${company.email || 'N/A'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">Owner Name:</div>
-                        <div class="field-value">${company.ownerName || 'N/A'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">Street Address:</div>
-                        <div class="field-value">${company.address || 'N/A'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">City:</div>
-                        <div class="field-value">${company.city || 'N/A'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">State:</div>
-                        <div class="field-value">${company.state || 'N/A'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">ZIP Code:</div>
-                        <div class="field-value">${company.zip || 'N/A'}</div>
-                    </div>
-                    <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); border-radius: 10px; font-size: 14px; color: #333; font-weight: bold;">
-                        📡 Source: ${company.source}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function clearResults() {
-            scrapedData = [];
-            document.getElementById('results').innerHTML = '<div class="status info">Click "Load Real Trucking Database" to start...</div>';
-            document.getElementById('status-messages').innerHTML = '<div class="status info">🚀 Ready to load trucking company data...</div>';
-            updateStats();
-        }
-
-        function downloadCSV() {
-            if (scrapedData.length === 0) {
-                addStatus('❌ No data to download', 'error');
-                return;
-            }
-
-            const headers = ['Company Name', 'DOT', 'MC', 'Phone', 'Email', 'Owner Name', 'Address', 'City', 'State', 'ZIP', 'Source'];
-            const csvContent = [
-                headers.join(','),
-                ...scrapedData.map(c => [
-                    `"${c.companyName}"`,
-                    `"${c.dot || ''}"`,
-                    `"${c.mc || ''}"`,
-                    `"${c.phone || ''}"`,
-                    `"${c.email || ''}"`,
-                    `"${c.ownerName || ''}"`,
-                    `"${c.address || ''}"`,
-                    `"${c.city || ''}"`,
-                    `"${c.state || ''}"`,
-                    `"${c.zip || ''}"`,
-                    `"${c.source}"`
-                ].join(','))
-            ].join('\\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'ultimate_trucking_companies.csv';
-            a.click();
-            URL.revokeObjectURL(url);
-
-            addStatus('✅ CSV downloaded successfully!', 'success');
-        }
-    </script>
 </body>
 </html>
